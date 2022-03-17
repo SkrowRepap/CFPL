@@ -57,6 +57,8 @@ public class Parser {
 
         Token dataType = consume(getDataType(peek()), "Expected / Invalid Data Type");
 
+        consume(TokenType.NEWLINE, "Expected line break");
+
         return new Stmt.Var(name, iniExpr, dataType);
     }
 
@@ -110,34 +112,83 @@ public class Parser {
             stmt.setDataType(dataType);
         }
 
+        consume(NEWLINE, "Expected newline after declaring");
+
         return stmts;
     }
     private Stmt statement() {
-        if (match(PRINT))
-            return printStatement();
+        // if (match(TokenType.INPUT))
+        //     return new Stmt.Input(input());
+            
+        // if (match(TokenType.PRINT))
+        //     return printStatement();
 
-
+        if (match(START)) {
+            return new Stmt.Block(executable());
+        }
         return expressionStatement();
     }
 
     private Stmt printStatement() {
         Expr value = expression();
+        consume(TokenType.NEWLINE, "Expected line break");
         return new Stmt.Print(value);
     }
 
     private Stmt expressionStatement() {
         Expr expr = expression();
+        consume(TokenType.NEWLINE, "Expected line break");
         return new Stmt.Expression(expr);
+    }
+
+    private List<Stmt> executable() {
+        List<Stmt> statements = new ArrayList<>();
+
+        if (!match(TokenType.NEWLINE)) {
+            throw error(peek(), "Expect break line after block");
+        }
+
+        while (!check(STOP) && !isAtEnd()) {
+            statements.add(executeStatements());
+        }
+
+        consume(STOP, "Out of bounds");
+
+        return statements;
+    }
+
+    private Stmt executeStatements() {
+        try {
+            if (match(TokenType.INPUT))
+                return new Stmt.Input(input());
+
+            if (match(TokenType.PRINT))
+                return printStatement();
+
+            if (match(TokenType.VAR))
+                return varDeclaration();
+
+            // if (match(TokenType.LEFT_BRACE))
+            //     return new Stmt.Block(block());
+
+            if (match(TokenType.START))
+                return new Stmt.Block(executable());
+
+            return expressionStatement();
+        } catch (ParseError error) {
+            synchronize();
+            return null;
+        }
     }
 
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
 
-        while (!check(STOP) && !isAtEnd()) {
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
             statements.add(declaration());
         }
 
-        consume(STOP, "Out of bounds");
+        consume(RIGHT_BRACE, "Out of bounds");
         return statements;
     }
 
@@ -315,6 +366,9 @@ public class Parser {
         advance();
 
         while (!isAtEnd()) {
+            if (previous().type == NEWLINE)
+                return;
+
             switch (peek().type) {
                 case CLASS:
                 case FUN:
@@ -328,6 +382,20 @@ public class Parser {
             advance();
         }
     }
+
+    private List<Token> input() {
+        Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
+        List<Token> tokens = new ArrayList<>();
+        tokens.add(name);
+        while (match(TokenType.COMMA)) {
+            tokens.add(consume(TokenType.IDENTIFIER, "Expect a variable name"));
+        }
+
+        consume(TokenType.NEWLINE, "Expect new line after variable declaration.");
+        return tokens;
+    }
+
+
 
     
  

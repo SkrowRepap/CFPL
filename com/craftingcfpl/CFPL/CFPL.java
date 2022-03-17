@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CFPL {
@@ -35,16 +36,26 @@ public class CFPL {
     private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
+        StringBuilder sb = new StringBuilder();
+
+        System.out.println("\n <<< [INSERT CODE HERE] >>>");
 
         for (;;) {
             System.out.print("> ");
             String line = reader.readLine();
-            if (line == null)
+            if (line == null || line.equals("run()")) {
+                sb.deleteCharAt(sb.length() - 1);
                 break;
-            run(line);
+
+            }
+            sb.append(line);
+            sb.append('\n');
             hadError = false;
             hadRuntimeError = false;
         }
+
+        System.out.println("\n <<< RUNNING CODE... >>>");
+        run(sb.toString());
     }
 
     private static void run(String source) {

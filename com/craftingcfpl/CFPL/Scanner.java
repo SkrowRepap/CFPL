@@ -52,6 +52,7 @@ class Scanner {
         //RESERVED WORDS
         keywords.put("VAR", VAR);
         keywords.put("OUTPUT:", PRINT);
+        keywords.put("INPUT:", INPUT);
         keywords.put("AS", AS);
         keywords.put("AND", AND);
         keywords.put("OR", OR);
@@ -143,9 +144,11 @@ class Scanner {
                 break;
 
             case '\n':
+
                 if(shouldAddNewLine()) {
                     addToken(NEWLINE);
                 }
+
                 line++;
                 break;
             
