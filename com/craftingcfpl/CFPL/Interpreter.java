@@ -1,5 +1,8 @@
 package com.craftingcfpl.CFPL;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.List;
 
 
@@ -15,6 +18,18 @@ public class Interpreter implements
             }
         } catch (RuntimeError error) {
             CFPL.runtimeError(error);
+        }
+    }
+
+    @Override
+    public Void visitExecutableStmt(Stmt.Executable stmt) {
+        executeExecutable(stmt.statements);
+        return null;
+    }
+
+    void executeExecutable(List<Stmt> statements) {
+        for (Stmt statement : statements) {
+            execute(statement);
         }
     }
 
@@ -58,6 +73,7 @@ public class Interpreter implements
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = (evaluate(stmt.expression));
+        System.out.println("[Output]");
         System.out.println(stringify(value));
         return null;
     }
@@ -226,6 +242,66 @@ public class Interpreter implements
         }
 
         return object.toString();
+    }
+
+    @Override
+    public Void visitInputStmt(Stmt.Input input) {
+
+        System.out.println("[Input]");
+
+        InputStreamReader inputStreamReader = new InputStreamReader(System.in);
+        BufferedReader reader = new BufferedReader(inputStreamReader);
+
+        String inputs;
+
+        try {
+            inputs = reader.readLine();
+            String[] values = inputs.split(",");
+            for (String string : values) {
+                System.out.println(string);
+                System.out.println(environment.get(input.tokens.get(0)));
+            }
+            if (inputs == null || values.length != input.tokens.size()) {
+                CFPL.error(input.tokens.get(0), "Error you did not enter values");
+
+                return null;
+            }
+            for (int i = 0; i < input.tokens.size(); i++) {
+                Object fValue = values[i];
+                String value = values[i];
+                Token t = input.tokens.get(i);
+                Expr.Variable var = new Expr.Variable(t);
+                Object currValue = environment.get(var.name);
+
+                if (currValue != null) {
+                    try {
+                        if (currValue instanceof Double) {
+                            fValue = Double.parseDouble(value);
+                        } else if (currValue instanceof Character) {
+                            if (value.length() > 1) {
+                                throw new RuntimeError(var.name, "Expected a character");
+                            } else if (value.length() == 1) {
+                                fValue = value.charAt(0);
+                            }
+                        } else if (currValue instanceof Integer) {
+                            fValue = Integer.valueOf(value);
+                        } else if (currValue instanceof Boolean) {
+                            fValue = Boolean.valueOf(value);
+                        }
+                    } catch (ClassCastException | NumberFormatException e) {
+                        System.out.println(e);
+                        CFPL.runtimeError(new RuntimeError(var.name, "Error: Incorrect Datatype"));
+                    }
+                }
+                environment.assign(var.name, fValue);
+            }
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        
+        return null;
     }
 
   
