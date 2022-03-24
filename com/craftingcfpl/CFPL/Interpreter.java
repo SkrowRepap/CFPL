@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import com.craftingcfpl.CFPL.Stmt.While;
+
+
 
 public class Interpreter implements
         Expr.Visitor<Object>, Stmt.Visitor<Void> {
@@ -56,6 +59,41 @@ public class Interpreter implements
             this.environment = previous;
         }
     }
+
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        while(isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
+
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left))
+                return left;
+        } else {
+            if (!isTruthy(left))
+                return left;
+        }
+
+        return evaluate(expr.right);
+    }
+
+
 
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
@@ -257,10 +295,7 @@ public class Interpreter implements
         try {
             inputs = reader.readLine();
             String[] values = inputs.split(",");
-            for (String string : values) {
-                System.out.println(string);
-                System.out.println(environment.get(input.tokens.get(0)));
-            }
+           
             if (inputs == null || values.length != input.tokens.size()) {
                 CFPL.error(input.tokens.get(0), "Error you did not enter values");
 
@@ -304,5 +339,6 @@ public class Interpreter implements
         return null;
     }
 
+   
   
 }

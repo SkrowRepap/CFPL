@@ -15,6 +15,10 @@ public abstract class Expr {
         R visitUnaryExpr(Unary expr);
 
         R visitVariableExpr(Variable expr);
+
+        R visitLogicalExpr(Logical stmt);
+
+
     }
 
     public static class Assign extends Expr {
@@ -101,6 +105,23 @@ public abstract class Expr {
         }
 
         public final Token name;
+    }
+
+    static class Logical extends Expr {
+        public Logical(Expr left, Token operator, Expr right) {
+            this.left = left;
+            this.operator = operator;
+            this.right = right;
+        }
+
+        final Expr left;
+        final Token operator;
+        final Expr right;
+
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return visitor.visitLogicalExpr(this);
+        }
     }
 
     public abstract <R> R accept(Visitor<R> visitor);

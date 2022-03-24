@@ -57,6 +57,9 @@ class Scanner {
         keywords.put("AND", AND);
         keywords.put("OR", OR);
         keywords.put("NOT", NOT);
+        keywords.put("IF", IF);
+        keywords.put("ELSE", ELSE);
+        keywords.put("WHILE", WHILE);
 
     }
 
@@ -65,7 +68,10 @@ class Scanner {
     }
 
     private boolean shouldAddNewLine() {
-        return tokens.size() >= 1 && tokens.get(tokens.size() - 1).type != TokenType.NEWLINE;
+        int size = tokens.size();
+        return  size >= 1 
+                && tokens.get(size - 1).type 
+                != TokenType.NEWLINE;
     }
     
     List<Token> scanTokens() {

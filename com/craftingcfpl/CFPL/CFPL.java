@@ -44,7 +44,7 @@ public class CFPL {
             System.out.print("> ");
             String line = reader.readLine();
             if (line == null || line.equals("run()")) {
-                sb.deleteCharAt(sb.length() - 1);
+                // sb.deleteCharAt(sb.length() - 1);
                 break;
 
             }
@@ -65,7 +65,7 @@ public class CFPL {
         List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
-            
+      
         if (hadError)
             return;
 

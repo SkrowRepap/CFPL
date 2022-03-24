@@ -3,6 +3,8 @@ package com.craftingcfpl.CFPL;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.craftingcfpl.CFPL.Stmt.Expression;
+
 import static com.craftingcfpl.CFPL.TokenType.*;
 
 
@@ -118,15 +120,29 @@ public class Parser {
     }
     private Stmt statement() {
         // if (match(TokenType.INPUT))
-        //     return new Stmt.Input(input());
-            
-        // if (match(TokenType.PRINT))
-        //     return printStatement();
-
+        //     return new Stmt.Input(input());  
+        
         if (match(START)) {
             return new Stmt.Block(executable());
         }
         return expressionStatement();
+    }
+
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+        consume(NEWLINE, "Expect line break after if statement.");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            consume(NEWLINE, "Expect line break after else statement.");
+            elseBranch = statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     private Stmt printStatement() {
@@ -145,7 +161,7 @@ public class Parser {
         List<Stmt> statements = new ArrayList<>();
 
         if (!match(TokenType.NEWLINE)) {
-            throw error(peek(), "Expect break line after block");
+            throw error(peek(), "Expect break line after START");
         }
 
         while (!check(STOP) && !isAtEnd()) {
@@ -153,6 +169,8 @@ public class Parser {
         }
 
         consume(STOP, "Out of bounds");
+
+        consume(NEWLINE, "Expected line break");
 
         return statements;
     }
@@ -167,6 +185,12 @@ public class Parser {
 
             if (match(TokenType.VAR))
                 return varDeclaration();
+            if (match(IF)) {
+                return ifStatement();
+            }
+            if (match(WHILE)) {
+                return whileStatement();
+            }
 
             // if (match(TokenType.LEFT_BRACE))
             //     return new Stmt.Block(block());
@@ -181,6 +205,20 @@ public class Parser {
         }
     }
 
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after WHILE expression");
+
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after expression ");
+        consume(NEWLINE, "Expect line break after WHILE statement");
+
+
+        Stmt body = statement();
+
+        return new Stmt.While(condition, body);
+
+    }
+
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
 
@@ -193,7 +231,7 @@ public class Parser {
     }
 
     private Expr assignment() {
-        Expr expr = equality();
+        Expr expr = equal_equal();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -210,6 +248,42 @@ public class Parser {
         return expr;
     }
 
+    private Expr equal_equal() {
+        Expr expr = or();
+
+        while (match(EQUAL_EQUAL)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+    
     private Expr equality() {
         Expr expr = comparison();
 
