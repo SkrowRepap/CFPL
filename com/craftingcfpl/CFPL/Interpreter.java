@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import javax.lang.model.util.ElementScanner14;
+
 import com.craftingcfpl.CFPL.Stmt.While;
 
 
@@ -85,7 +87,9 @@ public class Interpreter implements
         if (expr.operator.type == TokenType.OR) {
             if (isTruthy(left))
                 return left;
-        } else {
+        } 
+        
+        if (expr.operator.type == TokenType.AND) {
             if (!isTruthy(left))
                 return left;
         }
@@ -111,7 +115,6 @@ public class Interpreter implements
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = (evaluate(stmt.expression));
-        System.out.println("[Output]");
         System.out.println(stringify(value));
         return null;
     }
@@ -121,24 +124,34 @@ public class Interpreter implements
         return environment.get(expr.name);
     }
 
+    //Bugs
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         Object value = null;
-        if (stmt.initializer != null) {
+        // if (stmt.initializer != null) {
             try {
                 switch (stmt.dataType.type) {
                     case INT:
-                        value =  (double) evaluate(stmt.initializer);
+                        // value =  stmt.initializer == null ? (int)0 : (int) Double.valueOf((double)evaluate(
+                        //         stmt.initializer)).intValue();
+                        value = stmt.initializer == null ? (int) 0
+                                : evaluate(stmt.initializer);
+
+                        if (!value.getClass().getSimpleName().equals("Integer")) {
+                            throw new RuntimeError(stmt.name,
+                                    stmt.name.lexeme + " expects " + stmt.dataType.type + " but received "
+                                            + value.getClass().getSimpleName() + " instead.");
+                        }
                         break;
                     case CHAR:
-                        value = (char) evaluate(stmt.initializer);
+                        value = stmt.initializer == null ? (char)' ' : (char) evaluate(stmt.initializer);
                         break;
 
                     case BOOL:
-                        value = (boolean) evaluate(stmt.initializer);
+                        value = stmt.initializer == null ? (boolean)false : (boolean) evaluate(stmt.initializer);
                         break;
                     case FLOAT:
-                        value = (double) evaluate(stmt.initializer);
+                        value = stmt.initializer == null ? (double)0.0 : (double) evaluate(stmt.initializer);
                         break;
 
                     case STRING:
@@ -151,7 +164,7 @@ public class Interpreter implements
             } catch (ClassCastException e) {
                 CFPL.error(stmt.dataType, "Incorrect Datatype");
             }
-        }
+        // }
 
         environment.define(stmt.name.lexeme, value);
         return null;
@@ -171,7 +184,10 @@ public class Interpreter implements
             case BANG:
                 return !isTruthy(right);
             case MINUS:
-                return -(double) right;
+                if (right instanceof Integer) 
+                    return - (int) right;
+                if (right instanceof Double)
+                    return - (double) right;
             
         }
 
@@ -183,48 +199,75 @@ public class Interpreter implements
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
-
+        // System.out.println(left.getClass().getSimpleName());
+        // System.out.println(right.getClass().getSimpleName());
         switch (expr.operator.type) {
+
             case BANG_EQUAL:
-                return !isEqual(left, right);
+                return !isEqual(left, right); 
+
             case EQUAL_EQUAL:
                 return isEqual(left, right);
+
+            case MODULO:
+                if (left instanceof Integer && right instanceof Integer) {
+                    return (int) left % (int) right;
+                }
+                throw new RuntimeError(expr.operator, "Modulo only accepts two integers!");
+
             case GREATER:
                 checkNumberOperand(expr.operator, right);
-                return (double) left > (double) right;
+                return ((Number)left).doubleValue() > ((Number)right).doubleValue();
+
             case GREATER_EQUAL:
                 checkNumberOperand(expr.operator, right);
-                return (double) left >= (double) right;
+                return ((Number) left).doubleValue() >= ((Number) right).doubleValue();
+
             case LESS:
                 checkNumberOperand(expr.operator, right);
-                return (double) left < (double) right;
+                return ((Number)left).doubleValue() < ((Number) right).doubleValue();
+
             case LESS_EQUAL:
                 checkNumberOperand(expr.operator, right);
-                return (double) left <= (double) right;
+                return ((Number) left).doubleValue() <= ((Number) right).doubleValue();
+
             case MINUS:
                 checkNumberOperand(expr.operator, right);
-                return (double) left - (double) right;
+                if (left instanceof Integer && right instanceof Integer) {
+                    return (int) left - (int) right;
+                }
+                return ((Number) left).doubleValue() - ((Number) right).doubleValue();
+
             case SLASH:
                 checkNumberOperand(expr.operator, right);
-                return (double) left / (double) right;
+                if (left instanceof Integer && right instanceof Integer) {
+                    return (int) left / (int) right;
+                }
+                return ((Number) left).doubleValue() / ((Number) right).doubleValue();
+
             case STAR:
                 checkNumberOperand(expr.operator, right);
-                return (double) left * (double) right;
-            case AND:
-                return (boolean) left && (boolean)right;
-            case OR:
-                return (boolean) left || (boolean) right;
+                if (left instanceof Integer && right instanceof Integer) {
+                    return (int) left * (int) right;
+                }
+                
+                return ((Number) left).doubleValue() * ((Number) right).doubleValue();
+                
             case PLUS:
-                if (left instanceof Double && right instanceof Double) {
-                    return (double) left + (double) right;
+                if (left instanceof Integer && right instanceof Integer) {
+                    return (int) left + (int) right;
+                }
+                if (left instanceof Double || right instanceof Double) {
+                    return  ((Number)left).doubleValue() + ((Number)right).doubleValue();
                 }
                if (left instanceof String && right instanceof String) {
                     return (String) left + (String) right;
                 } 
                 new RuntimeError(expr.operator, "Operands must be a number or a string.");
                 break;
+
             case AMPERSAND:
-                return left + "" + right;
+                return left.toString() + "" + right.toString();
 
         }
 
@@ -257,7 +300,7 @@ public class Interpreter implements
     }
 
     private void checkNumberOperand(Token operator, Object operand) {
-        if (operand instanceof Double)
+        if (operand instanceof Number)
             return;
         throw new RuntimeError(operator, "Operand must be a number.");
     }
@@ -293,20 +336,24 @@ public class Interpreter implements
         String inputs;
 
         try {
+            // [1, 2]
             inputs = reader.readLine();
             String[] values = inputs.split(",");
-           
+        
             if (inputs == null || values.length != input.tokens.size()) {
                 CFPL.error(input.tokens.get(0), "Error you did not enter values");
 
                 return null;
             }
+
             for (int i = 0; i < input.tokens.size(); i++) {
-                Object fValue = values[i];
+                Object fValue = values[i]; // int
                 String value = values[i];
                 Token t = input.tokens.get(i);
-                Expr.Variable var = new Expr.Variable(t);
-                Object currValue = environment.get(var.name);
+                Expr.Variable var = new Expr.Variable(t); // variable a 
+                Object currValue = environment.get(var.name); // 
+
+                
 
                 if (currValue != null) {
                     try {
@@ -324,11 +371,13 @@ public class Interpreter implements
                             fValue = Boolean.valueOf(value);
                         }
                     } catch (ClassCastException | NumberFormatException e) {
-                        System.out.println(e);
                         CFPL.runtimeError(new RuntimeError(var.name, "Error: Incorrect Datatype"));
                     }
                 }
-                environment.assign(var.name, fValue);
+                // System.out.println("debug cV: " + currValue);
+                // System.out.println("debug fV: " + fValue);
+                // System.out.println("debug V: " + value);
+                environment.assign(var.name, fValue); 
             }
         } catch (IOException e1) {
             // TODO Auto-generated catch block

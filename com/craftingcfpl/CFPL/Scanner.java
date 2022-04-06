@@ -9,10 +9,12 @@ import static com.craftingcfpl.CFPL.TokenType.*;
 
 class Scanner {
     private final String source;
+    
     private final List<Token> tokens = new ArrayList<>();
     private int start = 0;
     private int current = 0;
     private int line = 1;
+    private int newline = 0; // added -ian
 
     private static final Map<String, TokenType> keywords;
 
@@ -42,8 +44,7 @@ class Scanner {
         keywords.put("BOOL", BOOL);
         keywords.put("FLOAT", FLOAT);
         keywords.put("STRING", STRING);
-        keywords.put("true", TRUE);
-        keywords.put("false", FALSE);
+        
 
         //BLOCK
         keywords.put("START", START);
@@ -54,12 +55,19 @@ class Scanner {
         keywords.put("OUTPUT:", PRINT);
         keywords.put("INPUT:", INPUT);
         keywords.put("AS", AS);
-        keywords.put("AND", AND);
+        
+
+        //LOGICAL
+        keywords.put("TRUE", TRUE);
+        keywords.put("FALSE", FALSE);
+        keywords.put("AND", TokenType.AND);
         keywords.put("OR", OR);
         keywords.put("NOT", NOT);
         keywords.put("IF", IF);
         keywords.put("ELSE", ELSE);
         keywords.put("WHILE", WHILE);
+        keywords.put("FOR", FOR);
+        keywords.put("#", NEXT_LINE);
 
     }
 
@@ -103,20 +111,26 @@ class Scanner {
             case ',':
                 addToken(COMMA);
                 break;
-            // case '.':
-            //     addToken(DOT);
-            //     break;
             case '-':
-                addToken(MINUS);
+                addToken(match('-') ? DECREMENT : MINUS);
                 break;
             case '+':
-                addToken(PLUS);
+                addToken(match('+') ? INCREMENT: PLUS);
                 break;
             case ';':
                 addToken(SEMICOLON);
                 break;
+            case '%':
+                addToken(MODULO);
+                break;
             case '*':
-                addToken(STAR);
+                if (allowComment() == true) { // added -ian
+                    while (peek() != '\n' && !isAtEnd()) // added -ian
+                        advance(); // added -ian
+                } else { // added -ian
+                    addToken(STAR); // added -ian
+                }
+
                 break;
             case '!':
                 addToken(match('=') ? BANG_EQUAL : BANG);
@@ -124,11 +138,11 @@ class Scanner {
             case '&':
                 addToken(AMPERSAND);
                 break;
-            case '=':
+            case '=': // == ? =
                 addToken(match('=') ? EQUAL_EQUAL : EQUAL);
                 break;
-            case '<':
-                addToken(match('=') ? LESS_EQUAL : LESS);
+            case '<': // <= ? <
+                addToken(match('=') ? LESS_EQUAL :  match('>') ? BANG_EQUAL : LESS);
                 break;
             case '>':
                 addToken(match('=') ? GREATER_EQUAL : GREATER);
@@ -154,14 +168,22 @@ class Scanner {
                 if(shouldAddNewLine()) {
                     addToken(NEWLINE);
                 }
+                newline = line;
 
                 line++;
                 break;
             
             case '"':
-                string();
+                if (peek() == '[')  {
+                    escapeCode();
+                }
+                else { 
+                    string();
+                }
                 break;
-
+            case '#':
+                addToken(NEXT_LINE);
+                break;
             case '\'':
                 charac();
                 break;
@@ -182,12 +204,15 @@ class Scanner {
     // public static Map<String, TokenType> getReservedWords() {
     //     return keywords;
     // }
-    
+    private boolean isAtStart() { // added -ian
+        return current == 1; // added -ian
+    }
+
     private boolean isAtEnd() {
         return current >= source.length();
     }
 
-    private char advance() {
+    private char advance() { // forward
         return source.charAt(current++);
     }
 
@@ -210,11 +235,42 @@ class Scanner {
         return true;
     }
 
-    private char peek() {
+    private char peek() { // mangniid "ty" (read)
         if (isAtEnd())
             return '\0';
         return source.charAt(current);
     }
+
+    private boolean allowComment() { // added -ian
+        if (isAtStart() || notAlphaPrev() || justNewlined()) { // added -ian
+            // System.out.println("I WAS HERE"); //added -ian
+            return true; // added -ian
+        } else // added -ian
+            return false; // added -ian
+    } // added -ian
+
+    private boolean justNewlined() { // added -ian
+        if (newline < line && source.charAt(current - 1) == '\n') // added -ian
+            return true; // added -ian
+        else // added -ian
+            return false; // added -ian
+    } // added -ian
+
+    private boolean notAlphaPrev() { // added -ian
+        int ctr = current - 1; // added -ian
+        // System.out.println(ctr); //added -ian
+        while (!isAlphaNumeric(source.charAt(ctr)) && source.charAt(ctr) != '\n') { // added -ian
+            ctr--; // added -ian
+        } // added -ian
+        if (isAlphaNumeric(source.charAt(ctr))) { // added -ian
+            // System.out.println(ctr); //added -ian
+            // System.out.println(source.charAt(ctr)); //added -ian
+            return false; // added -ian
+        } else { // added -ian
+            // System.out.println("ALLOWED"); //added -ian
+            return true; // added -ian
+        } // added -ian
+    } // added -ian
 
     private void string() {
         while (peek() != '"' && !isAtEnd()) {
@@ -231,13 +287,32 @@ class Scanner {
         advance();
 
         String value = source.substring(start + 1, current-1);
-        addToken(STRING, value); 
+        TokenType isBool = keywords.get(value);
+
+        try {
+            switch (isBool) {
+            case TRUE:
+                addToken(TRUE);
+                break;
+            case FALSE:
+                addToken(FALSE);
+                break;
+            case NEXT_LINE:
+                addToken(NEXT_LINE);
+                break;
+            default:
+                addToken(STRING, value);
+                break;
+        }
+        } catch (Exception e) {
+            addToken(STRING, value);
+        }
+        
+       
     }
 
     private void charac() {
         while (peek() != '\'' && !isAtEnd()) {
-            if (peek() == '\n')
-                line++;
             advance();
         }
 
@@ -277,12 +352,17 @@ class Scanner {
             
         }
 
-            addToken(NUMBER,
-                Double.parseDouble(source.substring(start, current)));
+       String value = source.substring(start, current);
+        if (value.indexOf(".") != -1) {
+            addToken(NUMBER, Double.parseDouble(value));
+        } else {
+            addToken(NUMBER, Integer.parseInt(value));
+        }
+    
         
     }
 
-    private char peekNext() {
+    private char peekNext() { 
         if (current + 1 >= source.length()) {
             return '\0';
         } 
@@ -310,9 +390,38 @@ class Scanner {
         }
 
         String text = source.substring(start, current);
+
         TokenType type = keywords.get(text);
+
         if (type == null)
-            type = IDENTIFIER;
+            type = IDENTIFIER; //x , y, name
         addToken(type);
+    }
+
+    private void escapeCode() {
+        while (peek() != ']' && !isAtEnd()) {
+            advance();
+        }
+
+        if (peekNext() == ']')
+            advance();
+
+        if (isAtEnd()) {
+            CFPL.error(line, "Unterminated escape code.");
+            return;
+        }
+        
+        advance();
+
+        String value = source.substring(start + 2, current - 1);
+        // If closing tag '"' is found
+        if (peek() == '"')
+            advance();
+
+
+        if (value.length() != 1) {
+            CFPL.error(line, value + " is not a character");
+        }
+        addToken(STRING, value);
     }
 }

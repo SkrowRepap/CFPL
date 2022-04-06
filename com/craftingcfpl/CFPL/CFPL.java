@@ -13,6 +13,7 @@ public class CFPL {
     private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
     static boolean hadRuntimeError = false;
+
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
             System.out.println("Usage: jlox [script]");
@@ -65,11 +66,13 @@ public class CFPL {
         List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
-      
+        // for (Token tkn : tokens) {
+        //     System.out.println(tkn);
+            
+        // }
         if (hadError)
             return;
 
-        
         interpreter.interpret(statements);
 
         // System.out.println(new ASTPrinter().print(statements));  

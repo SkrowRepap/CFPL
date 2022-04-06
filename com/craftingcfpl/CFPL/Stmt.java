@@ -2,6 +2,8 @@ package com.craftingcfpl.CFPL;
 
 import java.util.List;
 
+
+
 abstract class Stmt {
 
   interface Visitor<R> {
@@ -10,9 +12,10 @@ abstract class Stmt {
     R visitVarStmt(Var stmt);
     R visitBlockStmt(Block stmt);
     R visitExecutableStmt(Executable stmt);
-    R visitInputStmt(Input stmt);
+    R visitInputStmt(Input stmt); // INPUT:
     R visitIfStmt(If stmt);
     R visitWhileStmt (While stmt);
+
   }
 
   static class Expression extends Stmt {
@@ -137,8 +140,6 @@ abstract class Stmt {
       return visitor.visitWhileStmt(this);
     }
   }
-
-  
 
   abstract <R> R accept(Visitor<R> visitor);
 }

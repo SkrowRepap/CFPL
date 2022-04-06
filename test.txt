@@ -1,0 +1,24 @@
+VAR a,b,c AS INT
+VAR d="TRUE" AS BOOL
+START
+INPUT: a,b,c
+IF(a>10)
+START
+IF(b<20)
+START
+IF(c==5)
+START
+d="TRUE"
+OUTPUT: d & " " & c
+STOP
+ELSE
+START
+d="FALSE"
+OUTPUT: d & " " & c
+STOP
+OUTPUT: b
+STOP
+OUTPUT: a
+STOP
+OUTPUT: a & "#" & b & "#" & c & "#" & d
+STOP

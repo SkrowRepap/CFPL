@@ -36,7 +36,7 @@ public abstract class Expr {
         public final Expr value;
     }
 
-    public static class Binary extends Expr {
+    public static class Binary extends Expr { // 
         public Binary(Expr left, Token operator, Expr right) {
             this.left = left;
             this.operator = operator;
@@ -53,7 +53,7 @@ public abstract class Expr {
         public final Expr right;
     }
 
-    public static class Grouping extends Expr {
+    public static class Grouping extends Expr { 
         public Grouping(Expr expression) {
             this.expression = expression;
         }
