@@ -19,7 +19,10 @@ class Environment {
         this.enclosing = enclosing;
     }
 
-    void define(String name, Object value) {
+    void define(String name, Object value, int line) {
+        if (values.get(name) != null) {
+            throw new RuntimeError(new Token(TokenType.VAR, name, value, line), name + " is already defined!");
+        }
         values.put(name, value);
     }
 

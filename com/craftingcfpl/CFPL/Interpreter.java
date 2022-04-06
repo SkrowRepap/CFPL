@@ -166,7 +166,7 @@ public class Interpreter implements
             }
         // }
 
-        environment.define(stmt.name.lexeme, value);
+        environment.define(stmt.name.lexeme, value, stmt.name.line);
         return null;
     }
 
@@ -356,8 +356,11 @@ public class Interpreter implements
                 
 
                 if (currValue != null) {
+                    String dataType = currValue.getClass().getSimpleName();
                     try {
-                        if (currValue instanceof Double) {
+                        if (currValue instanceof Integer) {
+                            fValue = Integer.valueOf(value);
+                        } else if (currValue instanceof Double) {
                             fValue = Double.parseDouble(value);
                         } else if (currValue instanceof Character) {
                             if (value.length() > 1) {
@@ -365,13 +368,16 @@ public class Interpreter implements
                             } else if (value.length() == 1) {
                                 fValue = value.charAt(0);
                             }
-                        } else if (currValue instanceof Integer) {
-                            fValue = Integer.valueOf(value);
                         } else if (currValue instanceof Boolean) {
-                            fValue = Boolean.valueOf(value);
+                            if (value.contains("TRUE"));
+                                fValue = true;
+                            if (value.contains("FALSE"));
+                                fValue = false;
                         }
                     } catch (ClassCastException | NumberFormatException e) {
                         CFPL.runtimeError(new RuntimeError(var.name, "Error: Incorrect Datatype"));
+                        fValue = getDataType(fValue);
+                        
                     }
                 }
                 // System.out.println("debug cV: " + currValue);
@@ -379,15 +385,28 @@ public class Interpreter implements
                 // System.out.println("debug V: " + value);
                 environment.assign(var.name, fValue); 
             }
-        } catch (IOException e1) {
+        } catch (NullPointerException | IOException e) {
             // TODO Auto-generated catch block
-            e1.printStackTrace();
+            System.out.println(e);
         }
+
+        
 
         
         return null;
     }
 
+    private Object getDataType (Object value) {
+        String objStr = value.toString();
+        if (objStr.length() == 1)
+            return objStr.charAt(0);
+        if (objStr.toLowerCase().contains("true"))
+            return true;
+        if (objStr.toLowerCase().contains("false"))
+            return false;
+
+        return ((Number)value);
+    }
    
   
 }

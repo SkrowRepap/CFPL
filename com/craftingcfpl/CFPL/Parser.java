@@ -17,7 +17,7 @@ public class Parser {
     // BNF
 
     private final List<Token> tokens;
-
+    List<Stmt> statements = new ArrayList<>();
     private int current = 0;
 
     Parser(List<Token> tokens) {
@@ -25,7 +25,6 @@ public class Parser {
     }
 
     List<Stmt> parse() {
-        List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
             List<Stmt> declarations = declarations();
             if (declarations != null && declarations.size() > 0)
@@ -109,6 +108,13 @@ public class Parser {
     }
 
     private List<Stmt.Var> varDeclarations() {
+        for (Stmt stmt : statements) {
+            String cName = stmt.getClass().getName();
+            if (cName.contains("Block")) {
+                throw error(previous(), "Out of bounds! \nVariable declarations should be on top");
+            }
+        }
+
         Token name = consume(IDENTIFIER, "Expect variable name.");
         List<Stmt.Var> stmts = new ArrayList<>();
 
@@ -388,7 +394,7 @@ public class Parser {
     private Expr factor() {
         Expr expr = unary();
 
-        while (match(SLASH, STAR)) {
+        while (match(SLASH, STAR, MODULO)) {
             Token operator = previous();
             Expr right = unary();
             expr = new Expr.Binary(expr, operator, right);
