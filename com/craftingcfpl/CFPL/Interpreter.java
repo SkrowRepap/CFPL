@@ -314,14 +314,6 @@ public class Interpreter implements
         if (object == null)
             return "null";
 
-        if (object instanceof Double) {
-            String text = object.toString();
-            if (text.endsWith(".0")) {
-                text = text.substring(0, text.length() - 2);
-            }
-            return text.toString();
-        }
-
         return object.toString();
     }
 
@@ -405,11 +397,19 @@ public class Interpreter implements
                 return true;
             else if (objStr.toLowerCase().equals("false"))
                 return false;
+            else if (objStr.contains(".") && isAllDigit(objStr.substring(objStr.indexOf('.') + 1)) )
+                return Double.parseDouble(objStr);
             else return objStr;
         }
 
         return ((Number)value);
     }
    
-  
+    Boolean isAllDigit(String str) {
+        for (int i = 0; i < str.length(); i++) {
+            if (!Character.isDigit(str.charAt(i)))
+                return false;
+        }
+        return true;
+    }
 }

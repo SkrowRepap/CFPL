@@ -1,4 +1,4 @@
-VAR a = 0 AS FLOAT
+VAR a = 0 AS INT
 
 START
 INPUT: a
