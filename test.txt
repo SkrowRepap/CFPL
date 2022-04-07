@@ -1,10 +1,11 @@
-VAR a AS INT
-VAR b AS BOOL
-VAR c AS FLOAT
+VAR a = 0 AS FLOAT
+
 START
-INPUT: a,b,c
-OUTPUT: a
-OUTPUT: b
+WHILE (a < 5)
+
+START
+OUTPUT: a & "#" & "[#]"
+a = a + 1
 STOP
 
-
+STOP

@@ -151,7 +151,7 @@ public class Interpreter implements
                         value = stmt.initializer == null ? (boolean)false : (boolean) evaluate(stmt.initializer);
                         break;
                     case FLOAT:
-                        value = stmt.initializer == null ? (double)0.0 : (double) evaluate(stmt.initializer);
+                        value = stmt.initializer == null ? (double)0.0 : ((Number)evaluate(stmt.initializer)).doubleValue();
                         break;
 
                     case STRING:
@@ -312,7 +312,7 @@ public class Interpreter implements
 
     private String stringify(Object object) {
         if (object == null)
-            return "nil";
+            return "null";
 
         if (object instanceof Double) {
             String text = object.toString();
