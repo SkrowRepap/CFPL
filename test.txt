@@ -1,6 +1,7 @@
 VAR a = 0 AS FLOAT
 
 START
+INPUT: a
 WHILE (a < 5)
 
 START

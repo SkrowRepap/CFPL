@@ -400,10 +400,13 @@ public class Interpreter implements
         String objStr = value.toString();
         if (objStr.length() == 1)
             return objStr.charAt(0);
-        if (objStr.toLowerCase().contains("true"))
-            return true;
-        if (objStr.toLowerCase().contains("false"))
-            return false;
+        if (objStr.length() > 1) {
+            if (objStr.toLowerCase().equals("true"))
+                return true;
+            else if (objStr.toLowerCase().equals("false"))
+                return false;
+            else return objStr;
+        }
 
         return ((Number)value);
     }
